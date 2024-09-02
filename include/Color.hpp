@@ -2,7 +2,6 @@
 #define COLOR_H
 
 #include "Vec3.hpp"
-#include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv4/opencv2/opencv.hpp>
 
