@@ -4,12 +4,15 @@
 #include "Color.hpp"
 #include "Hittable.hpp"
 #include "Rtweekend.hpp"
+#include "Vec3.hpp"
+#include <opencv2/highgui.hpp>
 
 class Camera {
 public:
     double aspect_ratio = 1.0; // Ratio of image width over height
     int image_width = 100; // Rendered image width in pixel count
     int samples_per_pixel = 10; // Count of random samples for each pixel
+    int max_depth = 10; // Maximum number of ray bounces into scene
 
     void renderPPM(const Hittable& world) {
         initialize();
@@ -23,7 +26,7 @@ public:
                 Color pixel_color(0, 0, 0);
                 for (int sample = 0; sample < samples_per_pixel; sample++) {
                     Ray r = get_ray(i, j);
-                    pixel_color += ray_color(r, world);
+                    pixel_color += ray_color(r, max_depth, world);
                 }
                 write_color(std::cout, pixel_samples_scale * pixel_color);
             }
@@ -36,20 +39,22 @@ public:
         initialize();
 
         Mat* image = new Mat(image_height, image_width, CV_8UC3);
+        namedWindow("Display Image", WINDOW_AUTOSIZE);
 
         for (int j = 0; j < image_height; j++) {
             for (int i = 0; i < image_width; i++) {
                 Color pixel_color(0, 0, 0);
                 for (int sample = 0; sample < samples_per_pixel; sample++) {
                     Ray r = get_ray(i, j);
-                    pixel_color += ray_color(r, world);
+                    pixel_color += ray_color(r, max_depth, world);
                 }
                 write_color_to_cv(image, i, j, pixel_samples_scale * pixel_color);
+                // imshow("Display Image", *image);
+                // waitKey(1);
             }
-            namedWindow("Display Image", WINDOW_AUTOSIZE);
             imshow("Display Image", *image);
+            waitKey(1);
         }
-
         waitKey(0);
     }
 
@@ -107,11 +112,16 @@ private:
         return Vec3(random_double() - 0.5, random_double() - 0.5, 0);
     }
 
-    Color ray_color(const Ray& r, const Hittable& world) const {
+    Color ray_color(const Ray& r, int depth, const Hittable& world) const {
+        if (depth <= 0) {
+            return Color(0, 0, 0);
+        }
+
         HitRecord rec;
 
-        if (world.hit(r, Interval(0, infinity), rec)) {
-            return 0.5 * (rec.normal + Color(1, 1, 1));
+        if (world.hit(r, Interval(0.001, infinity), rec)) {
+            Vec3 direction = rec.normal + random_unit_vector();
+            return 0.5 * ray_color(Ray(rec.p, direction), depth - 1, world);
         }
 
         Vec3 unit_direction = unit_vector(r.direction());
