@@ -34,5 +34,8 @@ int main() {
     cam.lookat = Point3(0, 0, -1);
     cam.vup = Vec3(0, 1, 0);
 
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
+
     cam.renderOpencv(world);
 }
